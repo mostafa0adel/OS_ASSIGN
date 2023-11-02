@@ -1,12 +1,11 @@
+
 import java.io.*;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Scanner;
+import java.util.*;
 
 class Parser {
     String commandName;
     String[] args;
+    List<String> history = new ArrayList<>();
 
     public boolean parse(String input) {
         String[] commands = input.split(" ");
@@ -18,6 +17,13 @@ class Parser {
             return false;
         }
         return true;
+    }
+    public List<String> getHistory() {
+        return history;
+    }
+    public void addHistory(String history)
+    {
+        this.history.add(history);
     }
 
     public String getCommandName() {
@@ -40,8 +46,7 @@ class Terminal {
     }
 
     public String pwd() {
-        String currentDirectory = System.getProperty("user.dir");
-        return currentDirectory;
+        return System.getProperty("user.dir");
     }
 
     public void cd(String[] args) {
@@ -122,14 +127,25 @@ class Terminal {
         }
     }}
 
-    public void touch(String[] args) {
+    public void touch(String[] args){
         if (args.length == 1) {
-            String filePath = args[0];
-            File file = new File(filePath);
-            try {
-                file.createNewFile();
-            } catch (IOException e) {
-                System.out.println("Error creating file: " + e.getMessage());
+            String currentDir = System.getProperty("user.dir");
+            File file = new File(args[0]);
+
+            try{
+                if(file.isAbsolute())
+                {
+                    file.createNewFile();
+                }
+                else {
+                    String currentDir1 = System.getProperty("user.dir");
+                    String fullPath1 = currentDir1 + File.separator + args[0];
+                    File relativeDirectory = new File(fullPath1);
+                    relativeDirectory.createNewFile();
+                }
+            }
+            catch (IOException e) {
+                System.out.println("Error: Invalid command or bad parameters for " + args[0] + " - " + e.getMessage());
             }
         } else {
             System.out.println("Error: Command not found or invalid parameters are entered!");
@@ -146,11 +162,11 @@ class Terminal {
         switch (commandName) {
 
             case "cp":
-                if(args.length==3 && args[0].equals("-r")){
-                    cp_r(args);}
-                else if(args.length==2)
+                if(args.length==2 && !args[0].equals("-r"))
                 {
-                cp(args);}
+                cp(args);
+                parser.addHistory(input);
+                }
                 else {
                     System.out.println("Error: Command not found or invalid parameters are entered!");
                 }
@@ -161,12 +177,16 @@ class Terminal {
                     break;
                 }
                 System.out.println(pwd());
+                parser.addHistory(input);
                 break;
             case "ls":
                 if (args.length == 1 && args[0].equals("-r")) {
+
                     ls_r();
+                    parser.addHistory(input);
                 } else if(args.length == 0) {
                     ls();
+                    parser.addHistory(input);
                 }
                 else {
                     System.out.println("Error: Command not found or invalid parameters are entered!");
@@ -174,29 +194,41 @@ class Terminal {
                 break;
             case "rm":
                 rm(args);
+                parser.addHistory(input);
                 break;
             case "cat":
+
                 cat(args);
+                parser.addHistory(input);
                 break;
             case "echo":
                 echo(args);
+                parser.addHistory(input);
                 break;
             case "mkdir":
                 mkdir(args);
+                parser.addHistory(input);
                 break;
-                case "rmdir":
+            case "rmdir":
                 rmdir(args);
+                parser.addHistory(input);
                 break;
             case "wc":
                 wc(args);
+                parser.addHistory(input);
                 break;
             case "cd":
                 cd(args);
+                parser.addHistory(input);
                 break;
             case "touch":
                 touch(args);
+                parser.addHistory(input);
                 break;
-
+            case "history":
+                history(parser.getHistory());
+                parser.addHistory(input);
+                break;
             case "exit":
                 System.exit(0);
                 break;
@@ -210,21 +242,22 @@ class Terminal {
     public void ls() {
         File currentDirectory = new File(pwd());
         File[] files = currentDirectory.listFiles();
-        for (File file : files) {
+        for (File file :  files) {
             System.out.print(file.getName()+ "  ");
         }
-        System.out.println();
+        if (files.length != 0) {
+            System.out.println();}
     }
     public void ls_r(){
     // print the files in the current directory in reverse order
         File currentDirectory = new File(pwd());
         File[] files = currentDirectory.listFiles();
-        assert files != null;
         Collections.reverse(Arrays.asList(files));
         for (File file : files) {
             System.out.print(file.getName()+ "  ");
         }
-        System.out.println();
+        if (files.length != 0) {
+            System.out.println();}
 
     }
     public void wc(String[] args) {
@@ -361,6 +394,14 @@ class Terminal {
             }
         }
     }
+    public void history(List<String> history)
+    {
+        // Takes no parameters and displays an enumerated list with the commands you’ve used in the past
+        for (int i = 0; i < history.size(); i++) {
+            System.out.println((i + 1)+ " " + history.get(i));
+        }
+
+    }
 
     public void cp(String [] args){
         if (args.length != 2) {
@@ -388,46 +429,6 @@ class Terminal {
             System.out.println("Error: Unable to copy file - " + e.getMessage());
         }
 
-    }
-    public void cp_r(String []args)
-    {
-        if (args.length != 3) {
-            System.out.println("Error: Command not found or invalid parameters are entered!");
-            return;
-        }
-
-        File firstFile = new File(args[1]);
-        File secondFile = new File(args[2]);
-
-        if (!firstFile.exists() || !firstFile.isDirectory()) {
-            System.out.println("Error: target '" + args[1] + "' does not exist or is not a directory.");
-        }
-        if (secondFile.exists() && !secondFile.isDirectory()) {
-            System.out.println("Error: Destination '" + args[1] + "' is not a directory.");
-            return;
-        }
-        if (!secondFile.exists()) {
-            secondFile.mkdirs();
-    }
-        copyDirectory(firstFile, secondFile);
-    }
-    private void copyDirectory(File sourceDir, File destinationDir) {
-        File[] sourceFiles = sourceDir.listFiles();
-        if (sourceFiles != null) {
-            for (File sourceFile : sourceFiles) {
-                File destinationFile = new File(destinationDir, sourceFile.getName());
-
-                if (sourceFile.isDirectory()) {
-                    copyDirectory(sourceFile, destinationFile);
-                } else {
-                    try {
-                        Files.copy(sourceFile.toPath(), destinationFile.toPath());
-                    } catch (IOException e) {
-                        System.out.println("Error: Unable to copy file - " + e.getMessage());
-                    }
-                }
-            }
-        }
     }
 
         public static void main(String[] args) {
