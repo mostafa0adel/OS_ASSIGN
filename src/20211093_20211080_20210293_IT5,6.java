@@ -38,16 +38,13 @@ class Terminal {
     public Terminal() {
         parser = new Parser();
     }
-
     public String pwd() {
         return System.getProperty("user.dir");
     }
     public void cd(String[] args) {
         if (args.length == 0) {
-            // Case 1: Change to the home directory.
             System.setProperty("user.dir", System.getProperty("user.home"));
         } else if (args[0].equals("..")) {
-            // Case 2: Change to the previous directory.
             String currentDir = System.getProperty("user.dir");
             String parentDir = new File(currentDir).getParent();
             if (parentDir != null) {
@@ -56,7 +53,6 @@ class Terminal {
                 System.out.println("Already at the root directory.");
             }
         } else {
-            // Case 3: Change to the specified directory.
             try {
                 File directory = new File(args[0]);
 
@@ -83,63 +79,84 @@ class Terminal {
     }
     public void rmdir(String[] args) {
         if (args.length != 1) {
-            System.out.println("Error: Command not found or invalid parameters are entered!");
+            System.out.println("Usage: rmdir <directory_path> or rmdir *");
             return;
         }
-        if(args[0].equals("*")) {
-            File currentDirectory = new File(pwd());
-            File[] files = currentDirectory.listFiles();
-            assert files != null;
-            for (File file : files) {
-                if (file.isDirectory() && file.list().length == 0) {
-                    if (!file.delete()) {
-                        System.out.println("Failed to delete the directory.");
+
+        if (args[0].equals("*")) {
+            // Case 1: Remove all empty directories in the current directory
+            String currentDir = System.getProperty("user.dir");
+            File currentDirectory = new File(currentDir);
+
+            if (removeEmptyDirectories(currentDirectory)) {
+                System.out.println("All empty directories removed in the current directory.");
+            } else {
+                System.out.println("No empty directories found in the current directory.");
+            }
+        } else {
+            // Case 2: Remove the given directory if it is empty
+            String path = args[0];
+
+            File targetDirectory = new File(path);
+            if (removeEmptyDirectory(targetDirectory)) {
+                System.out.println("Directory removed: " + path);
+            } else {
+                System.out.println("Error removing directory or it is not empty: " + path);
+            }
+        }
+    }
+
+    public boolean removeEmptyDirectories(File directory) {
+        boolean directoriesRemoved = false;
+
+        File[] subDirectories = directory.listFiles(File::isDirectory);
+        if (subDirectories != null) {
+            for (File subDirectory : subDirectories) {
+                if (removeEmptyDirectories(subDirectory)) {
+                    directoriesRemoved = true;
+                }
+            }
+        }
+
+        if (directory.listFiles() == null || directory.listFiles().length == 0) {
+            if (directory.delete()) {
+                directoriesRemoved = true;
+            }
+        }
+
+        return directoriesRemoved;
+    }
+
+    public boolean removeEmptyDirectory(File directory) {
+        if (directory.isDirectory() && directory.exists()) {
+            File[] subFiles = directory.listFiles();
+            if (subFiles != null && subFiles.length == 0) {
+                return directory.delete();
+            }
+        }
+        return false;
+    }
+        public void touch(String[] args){
+            if (args.length == 1) {
+                String filePath = args[0];
+                File file = new File(filePath);
+
+                if (file.exists()) {
+                    System.out.println("File already exists: " + filePath);
+                } else {
+                    try {
+                        if (file.createNewFile()) {
+                            System.out.println("File created: " + filePath);
+                        } else {
+                            System.out.println("Error creating file: " + filePath);
+                        }
+                    } catch (IOException e) {
+                        System.out.println("Error creating file: " + e.getMessage());
                     }
                 }
+            } else {
+                System.out.println("Usage: touch <file_path>");
             }
-        }
-        else{
-
-        String dirName = args[0];
-        File dir = new File(dirName);
-
-        if (!dir.exists() || !dir.isDirectory()) {
-            System.out.println("Directory does not exist or is not a directory.");
-            return;
-        }
-
-        String[] subDirectories = dir.list();
-
-        if (subDirectories != null && subDirectories.length == 0) {
-            if (!dir.delete()) {
-                System.out.println("Failed to delete the directory.");
-            }
-        } else {
-            System.out.println("Directory is not empty. Cannot remove it.");
-        }
-    }}
-    public void touch(String[] args){
-        if (args.length == 1) {
-            String currentDir = System.getProperty("user.dir");
-            File file = new File(args[0]);
-            try{
-                if(file.isAbsolute())
-                {
-                    file.createNewFile();
-                }
-                else {
-                    String currentDir1 = System.getProperty("user.dir");
-                    String fullPath1 = currentDir1 + File.separator + args[0];
-                    File relativeDirectory = new File(fullPath1);
-                    relativeDirectory.createNewFile();
-                }
-            }
-            catch (IOException e) {
-                System.out.println("Error: Invalid command or bad parameters for " + args[0] + " - " + e.getMessage());
-            }
-        } else {
-            System.out.println("Error: Command not found or invalid parameters are entered!");
-        }
     }
     public void chooseCommandAction() {
         System.out.print(">");
@@ -152,8 +169,8 @@ class Terminal {
             case "cp":
                 if(args.length==2 && !args[0].equals("-r"))
                 {
-                cp(args);
-                parser.addHistory(input);
+                    cp(args);
+                    parser.addHistory(input);
                 }
                 else {
                     System.out.println("Error: Command not found or invalid parameters are entered!");
@@ -236,7 +253,7 @@ class Terminal {
             System.out.println();}
     }
     public void ls_r(){
-    // print the files in the current directory in reverse order
+        // print the files in the current directory in reverse order
         File currentDirectory = new File(pwd());
         File[] files = currentDirectory.listFiles();
         Collections.reverse(Arrays.asList(files));
@@ -312,7 +329,7 @@ class Terminal {
 
         }
         else if(args.length == 2) {
-     // concatenates the content of the 2 files and prints it.
+            // concatenates the content of the 2 files and prints it.
             try {
                 File file1 = new File(args[0]);
                 File file2 = new File(args[1]);
@@ -346,34 +363,29 @@ class Terminal {
     }
     public void mkdir(String[] args) {
         if (args.length == 0) {
-            System.out.println("Error: Command not found or invalid parameters are entered!");
+            System.out.println("Usage: mkdir <directory_name>");
             return;
         }
+
         for (String arg : args) {
-            File file = new File(arg);
-            try {
-                if (file.isAbsolute()) {
-                    if (!file.exists()) {
-                        if (!file.mkdir()) {
-                            System.out.println("Failed to create directory: " + file.getAbsolutePath());
-                        }
-                    } else {
-                        System.out.println(file.getAbsolutePath() + ": File already exists!");
-                    }
+            File newDirectory = new File(arg);
+
+            if (newDirectory.isAbsolute()) {
+                if (newDirectory.mkdirs()) {
+                    System.out.println("Directory created: " + newDirectory.getAbsolutePath());
                 } else {
-                    String currentDir = System.getProperty("user.dir");
-                    String fullPath = currentDir + File.separator + arg;
-                    File relativeDirectory = new File(fullPath);
-                    if (!relativeDirectory.exists()) {
-                        if (!relativeDirectory.mkdir()) {
-                            System.out.println("Failed to create directory: " + relativeDirectory.getAbsolutePath());
-                        }
-                    } else {
-                        System.out.println(relativeDirectory.getAbsolutePath() + ": File already exists!");
-                    }
+                    System.out.println("Error creating directory: " + newDirectory.getAbsolutePath());
                 }
-            } catch (Exception e) {
-                System.out.println("Error: Invalid command or bad parameters for " + arg + " - " + e.getMessage());
+            } else {
+                String currentDir = System.getProperty("user.dir");
+                String fullPath = currentDir + File.separator + arg;
+                File relativeDirectory = new File(fullPath);
+
+                if (relativeDirectory.mkdirs()) {
+                    System.out.println("Directory created: " + relativeDirectory.getAbsolutePath());
+                } else {
+                    System.out.println("Error creating directory: " + relativeDirectory.getAbsolutePath());
+                }
             }
         }
     }
@@ -407,7 +419,7 @@ class Terminal {
             System.out.println("Error: Unable to copy file - " + e.getMessage());
         }
     }
-        public static void main(String[] args) {
+    public static void main(String[] args) {
         Terminal terminal = new Terminal();
         while (true) {
             terminal.chooseCommandAction();
