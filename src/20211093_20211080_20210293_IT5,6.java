@@ -1,7 +1,6 @@
 
 import java.io.*;
 import java.util.*;
-
 class Parser {
     String commandName;
     String[] args;
@@ -34,13 +33,8 @@ class Parser {
         return args;
     }
 }
-
-
 class Terminal {
     Parser parser;
-
-    // Store the current directory as a string
-
     public Terminal() {
         parser = new Parser();
     }
@@ -48,7 +42,6 @@ class Terminal {
     public String pwd() {
         return System.getProperty("user.dir");
     }
-
     public void cd(String[] args) {
         if (args.length == 0) {
             // Case 1: Change to the home directory.
@@ -88,7 +81,6 @@ class Terminal {
             }
         }
     }
-
     public void rmdir(String[] args) {
         if (args.length != 1) {
             System.out.println("Error: Command not found or invalid parameters are entered!");
@@ -126,12 +118,10 @@ class Terminal {
             System.out.println("Directory is not empty. Cannot remove it.");
         }
     }}
-
     public void touch(String[] args){
         if (args.length == 1) {
             String currentDir = System.getProperty("user.dir");
             File file = new File(args[0]);
-
             try{
                 if(file.isAbsolute())
                 {
@@ -158,9 +148,7 @@ class Terminal {
         parser.parse(input);
         String commandName = parser.getCommandName();
         String[] args = parser.getArgs();
-
         switch (commandName) {
-
             case "cp":
                 if(args.length==2 && !args[0].equals("-r"))
                 {
@@ -238,7 +226,6 @@ class Terminal {
                 break;
         }
     }
-
     public void ls() {
         File currentDirectory = new File(pwd());
         File[] files = currentDirectory.listFiles();
@@ -288,7 +275,6 @@ class Terminal {
         }
 
     }
-
     public void rm(String[] args) {
         if (args.length != 1) {
             System.out.println("Error: Command not found or invalid parameters are entered!");
@@ -308,9 +294,6 @@ class Terminal {
             System.out.println("Error: The file '" + args[0] + "' does not exist in the current directory.");
         }
     }
-
-
-
     public void cat(String[] args) {
         if(args.length == 1) {
             try {
@@ -356,8 +339,8 @@ class Terminal {
         }
     }
     public void echo(String[] args) {
-        for (int i = 0; i < args.length; i++) {
-            System.out.print(args[i] + " ");
+        for (String arg : args) {
+            System.out.print(arg + " ");
         }
         System.out.println();
     }
@@ -402,24 +385,19 @@ class Terminal {
         }
 
     }
-
     public void cp(String [] args){
         if (args.length != 2) {
             System.out.println("Error: Command not found or invalid parameters are entered!");
             return;
         }
-
         File firstFile = new File(args[0]);
         File secondFile = new File(args[1]);
-
         if (!firstFile.exists() || !firstFile.isFile()) {
             System.out.println("Error: target '" + args[0] + "' does not exist or is not a file.");
             return;
         }
-
         try (FileReader reader = new FileReader(firstFile);
              FileWriter writer = new FileWriter(secondFile)) {
-
             int charRead;
             while ((charRead = reader.read()) != -1) {
                 writer.write(charRead);
@@ -428,9 +406,7 @@ class Terminal {
         } catch (IOException e) {
             System.out.println("Error: Unable to copy file - " + e.getMessage());
         }
-
     }
-
         public static void main(String[] args) {
         Terminal terminal = new Terminal();
         while (true) {
